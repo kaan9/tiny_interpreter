@@ -43,7 +43,8 @@ mod match_expr {
     }
     pub fn printvar(line: &str) -> Result<&str, ()> {
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"^\s*print\s+(?P<var>[_a-zA-Z]\w*)\s*$").unwrap();
+            static ref RE: Regex = Regex::new(r"^\s*print\s+(?P<var>[_a-zA-Z]\w*)\s*$").unwrap();TR
+
         }
         match RE.captures(line) {
             None => Err(()),
