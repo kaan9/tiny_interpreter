@@ -1,4 +1,14 @@
 <program> ::= {<line>}*
 
 <line> ::= <definition>
-         | <
+         | <statement>
+
+<definition> ::= <var> = <val>;
+
+<statement> ::= [if | while] (<cond>) \{ {<line>}* \}
+
+<cond> ::= [<var> | <val>] [ == | < | > | <= | >= | != ] [<var> | <val>]
+
+<var> ::= /[_a-zA-z]\w*/
+
+<val> ::= /-?\d+/

@@ -4,19 +4,19 @@ use std::io::{self, BufRead};
 #[macro_use]
 extern crate lazy_static;
 
-struct Vars {
+struct GlobalState {
     vars: HashMap<String, i32>,
 }
 
-impl Vars {
+impl GlobalState {
     fn new() -> Self {
-        Vars {
+        GlobalState {
             vars: HashMap::new(),
         }
     }
-    fn update_var(&mut self, name: String, new_val: i32) -> i32 {
+    fn update_var(&mut self, name: String, new_val: i32) -> &mut Self {
         self.vars.insert(name, new_val);
-        new_val
+        self
     }
     fn val(&self, name: &str) -> Option<i32> {
         match self.vars.get(name) {
@@ -28,6 +28,23 @@ impl Vars {
 
 mod match_expr {
     use regex::Regex;
+    pub fn statement(line: &str) -> Result<(&str, i32), ()> {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(
+                r"(?sx)^(?:if)|(?:while) \s*
+                    \((?P<cond>.+)\) \s*
+                    $"
+            )
+            .unwrap();
+        }
+        match RE.captures(line) {
+            None => Err(()),
+            Some(cap) => Ok((
+                cap.name("var").unwrap().as_str(),
+                cap.name("val").unwrap().as_str().parse::<i32>().unwrap(),
+            )),
+        }
+    }
     pub fn assignment(line: &str) -> Result<(&str, i32), ()> {
         lazy_static! {
             static ref RE: Regex =
@@ -43,8 +60,7 @@ mod match_expr {
     }
     pub fn printvar(line: &str) -> Result<&str, ()> {
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"^\s*print\s+(?P<var>[_a-zA-Z]\w*)\s*$").unwrap();TR
-
+            static ref RE: Regex = Regex::new(r"^\s*print\s+(?P<var>[_a-zA-Z]\w*)\s*$").unwrap();
         }
         match RE.captures(line) {
             None => Err(()),
@@ -75,12 +91,12 @@ mod match_expr {
     // }
 }
 
-fn interp_statement(vars: &mut Vars, input: &str) {
+fn interp_statement(gstate: &mut GlobalState, input: &str) {
     if let Ok((var, val)) = match_expr::assignment(&input) {
-        vars.update_var(String::from(var), val);
+        gstate.update_var(String::from(var), val);
         println!("set {} to {}", var, val)
     } else if let Ok(var) = match_expr::printvar(&input) {
-        match vars.val(var) {
+        match gstate.val(var) {
             None => println!("unknown variable {}", var),
             Some(val) => println!("{}", val),
         }
@@ -92,7 +108,7 @@ fn interp_statement(vars: &mut Vars, input: &str) {
 }
 
 fn main() {
-    let mut vars = Vars::new();
+    let mut gstate = GlobalState::new();
     let stdin = io::stdin();
 
     //std::fs::File::open("/f").unwrap()
@@ -111,7 +127,7 @@ fn main() {
                 continue;
             }
         }
-        interp_statement(&mut vars, &input);
+        interp_statement(&mut gstate, &input);
         input.clear();
     }
 }
